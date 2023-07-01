@@ -28,7 +28,7 @@ resource "azurerm_virtual_wan" "vwan" {
 
 resource "azurerm_virtual_hub" "vhub" {
   for_each = var.vhub
-  name                = each.value.name
+  name                = each.key
   resource_group_name = each.value.rgname
   location            = each.value.location
   virtual_wan_id      = azurerm_virtual_wan.vwan.id
@@ -43,25 +43,16 @@ resource "azurerm_virtual_hub" "vhub" {
 }
 
 
-locals {
- hubidlist = [for hub in azurerm_virtual_hub.vhub : "${hub.id}"]
-}
-
-/*
 resource "azurerm_express_route_gateway" "ergateway" {
   depends_on = [azurerm_virtual_hub.vhub]
-  for_each = var.ergateway
-  name                = each.value.name
+  for_each = azurerm_virtual_hub.vhub
+  name                = each.key
   resource_group_name = each.value.resource_group_name
   location            = each.value.location
-  virtual_hub_id = "${[for hub in azurerm_virtual_hub.vhub[each.key] : hub.id]}"
- # virtual_hub_id =  local.hubidlist[*].id
- # virtual_hub_id = azurerm_virtual_hub.vhub.*.ID
- # virtual_hub_id =  tostring(azurerm_virtual_hub.vhub[each.key].id)
- # virtual_hub_id = azurerm_virtual_hub.vhub[each.key].id
+  virtual_hub_id = azurerm_virtual_hub.vhub["${each.key}"].id
   scale_units =  5
   }
 
 
-#index = range(length(var.vhub))
-*/ 
+
+
