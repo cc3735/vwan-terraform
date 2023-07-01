@@ -54,5 +54,34 @@ resource "azurerm_express_route_gateway" "ergateway" {
   }
 
 
+# We need to import the existing express route port example 
+
+# terraform import azurerm_express_route_port.example /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.Network/expressRoutePorts/port1
+
+#####
+
+data "azurerm_express_route_circuit" "example" {
+  for_each = azurerm_express_route_gateway.ergateway
+  resource_group_name = each.value.resource_group_name
+  name = each.key
+} 
 
 
+resource "azurerm_express_route_circuit_peering" "example" {
+  for_each = azurerm_express_route_gateway.ergateway
+  peering_type                  = "AzurePrivatePeering"
+  express_route_circuit_name    = "${data.azurerm_express_route_circuit.example[each.key].name}"
+  resource_group_name           = "${data.azurerm_express_route_circuit.example[each.key].resource_group_name}"
+  shared_key                    = "ItsASecret"
+  peer_asn                      = 100
+  primary_peer_address_prefix   = "192.168.1.0/30"
+  secondary_peer_address_prefix = "192.168.2.0/30"
+  vlan_id                       = 100
+}
+
+resource "azurerm_express_route_connection" "example" {
+  for_each = azurerm_express_route_gateway.ergateway
+  name                             = "example-expressrouteconn"
+  express_route_gateway_id         = "${azurerm_express_route_gateway.ergateway[each.key].id}"
+  express_route_circuit_peering_id = "${azurerm_express_route_circuit_peering.example[each.key].id}"
+}
