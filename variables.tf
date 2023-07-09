@@ -98,3 +98,29 @@ variable "ergateway" {
 }
 
 
+variable "Transithubs" {
+  type = map(object({
+    name = string
+    resource_group_name = string
+    location = string
+    address_space = list(string)
+    resource_group_name = string
+    dns_servers = list(string)
+    azfw_subnet_address_prefix = list(string)
+    azfw_mgmt_subet_address_prefix = list(string)
+  }))
+  default = {
+    "TransitHub1" = {
+        name = "test"
+        address_space = ["10.0.1.0/24"]
+        resource_group_name = "MyRG"
+        location = "eastus2"
+        dns_servers = ["8.8.8.8"]
+        azfw_subnet_address_prefix = ["10.0.1.0/27"]
+        azfw_mgmt_subet_address_prefix = ["10.0.1.100/27"]
+
+    }
+  }
+}
+
+

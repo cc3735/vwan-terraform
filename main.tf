@@ -85,3 +85,89 @@ resource "azurerm_express_route_connection" "example" {
   express_route_gateway_id         = "${azurerm_express_route_gateway.ergateway[each.key].id}"
   express_route_circuit_peering_id = "${azurerm_express_route_circuit_peering.example[each.key].id}"
 }
+
+resource "azurerm_virtual_network" "Transithubs" {
+  for_each = var.Transithubs
+  name = each.key
+  address_space = each.value.address_space #list
+  location = each.value.location
+  resource_group_name = each.value.resource_group_name
+  dns_servers =  each.value.dns_servers
+#dynamic "fwsubnets" {
+#  for_each = var.fwsubnets
+#  content {
+#    name = fwsubnets.value.address_prefixes
+#    address_prefix = fwsubnets.value.address_prefix
+#    security_group = ""
+#  }
+#}
+}
+
+resource "azurerm_subnet" "azfwsubnet" {
+  for_each = var.Transithubs
+  name                 = "AZURE-FW-${each.key}"
+  resource_group_name  = each.value.resource_group_name
+  virtual_network_name = azurerm_virtual_network.Transithubs[each.key].name
+  address_prefixes     = each.value.azfw_subnet_address_prefix
+}
+
+resource "azurerm_subnet" "azfwmanagementsubnet" {
+  for_each =  var.Transithubs
+  name                 = "Azure-FW-MGMT${each.key}"
+  resource_group_name  = each.value.resource_group_name
+  virtual_network_name = azurerm_virtual_network.Transithubs[each.key].name
+  address_prefixes     = each.value.azfw_mgmt_subet_address_prefix
+}
+
+
+
+data "azurerm_resource_group" "resource_groups" {
+  for_each = var.Transithubs
+  name = azurerm_virtual_network.Transithubs[each.key].resource_group_name
+}
+
+resource "azurerm_public_ip" "fw_publicip" {
+  for_each = azurerm_subnet.azfwsubnet
+  name                = "acceptanceTestPublicIp1"
+  resource_group_name = azurerm_subnet.azfwsubnet[each.key].resource_group_name
+  location            = data.azurerm_resource_group.resource_groups[each.key].location
+  allocation_method   = "Static"
+
+  tags = {
+    environment = "Production"
+  }
+}
+
+resource "azurerm_public_ip" "fw_management_publicip" {
+  for_each = azurerm_subnet.azfwmanagementsubnet
+  name                = "acceptanceTestPublicIp2"
+  resource_group_name = azurerm_subnet.azfwmanagementsubnet[each.key].resource_group_name
+  location            = data.azurerm_resource_group.resource_groups[each.key].location
+  allocation_method   = "Static"
+
+  tags = {
+    environment = "Production"
+  }
+}
+
+
+resource "azurerm_firewall" "example" {
+  for_each = azurerm_virtual_network.Transithubs
+  name                = "testfirewall"
+  location            = data.azurerm_resource_group.resource_groups[each.key].location
+  resource_group_name = azurerm_subnet.azfwsubnet[each.key].resource_group_name
+  sku_name            = "AZFW_VNet"
+  sku_tier            = "Standard"
+
+  ip_configuration {
+    name                 = "configuration"
+    subnet_id            = azurerm_subnet.azfwsubnet[each.key].id
+    public_ip_address_id = azurerm_public_ip.fw_publicip[each.key].id
+  }
+
+  management_ip_configuration {
+    name = "configuration"
+    subnet_id = azurerm_subnet.azfwmanagementsubnet[each.key].id
+    public_ip_address_id = azurerm_public_ip.fw_management_publicip[each.key].id
+  }
+}
