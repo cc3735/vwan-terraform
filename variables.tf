@@ -4,9 +4,17 @@ variable "resource_groups" {
     location = string
   }))
   default = {
-    "RG1" = {
-        name = "myRG"
+    "ResourceGroup-VWAN" = {
+        name = "VWAN-east-rg"
         location = "eastus2"
+    }
+     "ResourceGroup-VWANhub-east" = {
+        name = "VWANhub-east-rg"
+        location = "eastus2"
+    }
+     "ResourceGroup-VWANhub-central" = {
+        name = "Vwanhub-central-rg"
+        location = "centralus"
     }
   }
 }
@@ -15,7 +23,7 @@ variable "vwan" {
     type = map
     default = {
         name = "myVWAN"
-        rgname = "myRG"
+        rgname = "VWANhub-east-rg"
         location = "eastus2"
     }
 }
@@ -118,8 +126,15 @@ variable "Transithubs" {
         dns_servers = ["8.8.8.8"]
         azfw_subnet_address_prefix = ["10.0.1.0/27"]
         azfw_mgmt_subet_address_prefix = ["10.0.1.100/27"]
-
     }
+    "TransitHub2" = {
+        name = "test"
+        address_space = ["10.0.1.0/24"]
+        resource_group_name = "MyRG"
+        location = "eastus2"
+        dns_servers = ["8.8.8.8"]
+        azfw_subnet_address_prefix = ["10.0.1.0/27"]
+        azfw_mgmt_subet_address_prefix = ["10.0.1.100/27"]
   }
 }
 
